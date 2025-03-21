@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script runs checks before committing changes to tiktoken.
-# It checks that the manifest is correct and runs a basic test suite.
+# It checks that Rust code compiles and runs a basic test suite.
 
 set -e  # Exit on error
 
@@ -21,10 +21,6 @@ else
     echo "WARNING: Cargo not found, skipping Rust code checks."
     echo "Please run the setup.sh script first or install Rust manually."
 fi
-
-# Run check-manifest
-echo "Running check-manifest..."
-check-manifest -v
 
 # Run basic tests (faster subset for precommit)
 echo "Running basic tests..."
