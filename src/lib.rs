@@ -33,21 +33,22 @@ fn _byte_pair_merge(ranks: &HashMap<Vec<u8>, Rank>, piece: &[u8]) -> Vec<(usize,
     parts.push((piece.len() - 1, Rank::MAX));
     parts.push((piece.len(), Rank::MAX));
 
-    // To avoid stack overflows with very long repetitive sequences, use an iterative approach
-    // with a fixed number of merges per iteration and check for completion.
-    // This prevents unbounded recursion and excessive stack usage.
+    // This is an iterative version of the original algorithm
+    // It avoids excessive stack usage while producing identical results
     while min_rank.0 != Rank::MAX {
-        let mut i = min_rank.1;
+        let i = min_rank.1;
         
-        // Update the ranks of adjacent parts
-        // This code now uses explicit indexing instead of complex closures to reduce stack usage
-        let i_minus_1_rank = if i > 0 && i + 3 < parts.len() {
-            *ranks
-                .get(&piece[parts[i-1].0..parts[i+2].0])
-                .unwrap_or(&Rank::MAX)
-        } else {
-            Rank::MAX
-        };
+        // Update the ranks of adjacent parts - using the same logic as the original
+        if i > 0 {
+            let i_minus_1_rank = if i + 2 < parts.len() {
+                *ranks
+                    .get(&piece[parts[i-1].0..parts[i+2].0])
+                    .unwrap_or(&Rank::MAX)
+            } else {
+                Rank::MAX
+            };
+            parts[i - 1].1 = i_minus_1_rank;
+        }
         
         let i_rank = if i + 3 < parts.len() {
             *ranks
@@ -56,34 +57,17 @@ fn _byte_pair_merge(ranks: &HashMap<Vec<u8>, Rank>, piece: &[u8]) -> Vec<(usize,
         } else {
             Rank::MAX
         };
-        
-        // Apply the updates
-        if i > 0 {
-            parts[i - 1].1 = i_minus_1_rank;
-        }
         parts[i].1 = i_rank;
         
         // Remove the merged part
         parts.remove(i + 1);
 
-        // Find the next minimum rank - using a more efficient and iterative approach
+        // Find the next minimum rank by scanning all parts
+        // This preserves the exact behavior of the original algorithm
         min_rank = (Rank::MAX, usize::MAX);
-        
-        // This loop can iterate many times for long repetitive sequences
-        // We'll use a more efficient scan and limit the maximum iterations to prevent stack overflow
-        let scan_limit = std::cmp::min(parts.len() - 1, 1000); // Limit iterations for very long sequences
-        for idx in 0..scan_limit {
-            if parts[idx].1 < min_rank.0 {
-                min_rank = (parts[idx].1, idx);
-            }
-        }
-        
-        // If there are more parts to scan, we'll do another iteration
-        if scan_limit < parts.len() - 1 {
-            for idx in scan_limit..parts.len() - 1 {
-                if parts[idx].1 < min_rank.0 {
-                    min_rank = (parts[idx].1, idx);
-                }
+        for (idx, &(_, rank)) in parts[..parts.len() - 1].iter().enumerate() {
+            if rank < min_rank.0 {
+                min_rank = (rank, idx);
             }
         }
     }
