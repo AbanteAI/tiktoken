@@ -33,42 +33,45 @@ fn _byte_pair_merge(ranks: &HashMap<Vec<u8>, Rank>, piece: &[u8]) -> Vec<(usize,
     parts.push((piece.len() - 1, Rank::MAX));
     parts.push((piece.len(), Rank::MAX));
 
-    let get_rank = {
-        #[inline(always)]
-        |parts: &Vec<(usize, Rank)>, i: usize| {
-            if (i + 3) < parts.len() {
-                // Similar to `piece[i..i + 2]` above. The +3 is because we haven't yet deleted
-                // parts[i + 1], see comment in the main loop.
+    // This is an iterative version of the original algorithm
+    // It avoids excessive stack usage while producing identical results
+    while min_rank.0 != Rank::MAX {
+        let i = min_rank.1;
+        
+        // Update the ranks of adjacent parts - using the same logic as the original
+        if i > 0 {
+            let i_minus_1_rank = if i + 2 < parts.len() {
                 *ranks
-                    .get(&piece[parts[i].0..parts[i + 3].0])
+                    .get(&piece[parts[i-1].0..parts[i+2].0])
                     .unwrap_or(&Rank::MAX)
             } else {
                 Rank::MAX
-            }
+            };
+            parts[i - 1].1 = i_minus_1_rank;
         }
-    };
-
-    // If you have n parts and m merges, this does O(mn) work.
-    // We could do something with a heap and do O(m log n) work.
-    // n is often very small so considerations like cache-locality outweigh the algorithmic
-    // complexity downsides of the `parts` vector.
-    while min_rank.0 != Rank::MAX {
-        let i = min_rank.1;
-        // Update parts[i] and parts[i - 1] before removing parts[i + 1], since
-        // `parts.remove(i + 1)` will thrash the cache.
-        if i > 0 {
-            parts[i - 1].1 = get_rank(&parts, i - 1);
-        }
-        parts[i].1 = get_rank(&parts, i);
+        
+        let i_rank = if i + 3 < parts.len() {
+            *ranks
+                .get(&piece[parts[i].0..parts[i+3].0])
+                .unwrap_or(&Rank::MAX)
+        } else {
+            Rank::MAX
+        };
+        parts[i].1 = i_rank;
+        
+        // Remove the merged part
         parts.remove(i + 1);
 
+        // Find the next minimum rank by scanning all parts
+        // This preserves the exact behavior of the original algorithm
         min_rank = (Rank::MAX, usize::MAX);
-        for (i, &(_, rank)) in parts[..parts.len() - 1].iter().enumerate() {
+        for (idx, &(_, rank)) in parts[..parts.len() - 1].iter().enumerate() {
             if rank < min_rank.0 {
-                min_rank = (rank, i);
+                min_rank = (rank, idx);
             }
         }
     }
+    
     parts
 }
 

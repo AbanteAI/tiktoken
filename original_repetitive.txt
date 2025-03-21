@@ -1,0 +1,4 @@
+Testing with medium repetitive string (50,000 Xs)
+Encoded 50000 'X's into 6250 tokens
+Time taken: 2.1188 seconds
+Tokens per second: 2949.72

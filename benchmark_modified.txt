@@ -1,0 +1,48 @@
+
+Running benchmarks on various text types...
+
+Testing: English Essay
+Text length: 167600 characters
+Token count: 30801
+Average time: 0.0213 seconds
+Min time: 0.0186 seconds
+Max time: 0.0290 seconds
+Median time: 0.0191 seconds
+Tokens per second: 1447885.67
+
+--------------------------------------------------------------------------------
+
+Testing: Python Code
+Text length: 59100 characters
+Token count: 14452
+Average time: 0.0118 seconds
+Min time: 0.0115 seconds
+Max time: 0.0125 seconds
+Median time: 0.0115 seconds
+Tokens per second: 1220145.20
+
+--------------------------------------------------------------------------------
+
+Testing: Mixed Content
+Text length: 38250 characters
+Token count: 9301
+Average time: 0.0095 seconds
+Min time: 0.0074 seconds
+Max time: 0.0176 seconds
+Median time: 0.0075 seconds
+Tokens per second: 980462.28
+
+--------------------------------------------------------------------------------
+
+Testing: Moderate Repetition
+Text length: 12300 characters
+Token count: 2401
+Average time: 0.0012 seconds
+Min time: 0.0012 seconds
+Max time: 0.0012 seconds
+Median time: 0.0012 seconds
+Tokens per second: 1976783.12
+
+--------------------------------------------------------------------------------
+
+Benchmarks completed!
