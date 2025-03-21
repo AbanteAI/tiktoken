@@ -2,6 +2,10 @@
 
 This is the changelog for the open source version of tiktoken.
 
+## [Unreleased]
+- Fix stack overflow error when encoding very long repetitive strings
+- Add handling for chunking strategies to process long repetitive content
+
 ## [v0.9.0]
 - Support for `o1` and `o3` models
 - Better error messages when loading invalid vocabulary files

@@ -131,6 +131,17 @@ class Encoding:
             # Also we use errors="replace" to handle weird things like lone surrogates.
             text = text.encode("utf-16", "surrogatepass").decode("utf-16", "replace")
             return self._core_bpe.encode(text, allowed_special)
+        except RuntimeError as e:
+            # Handle stack overflow errors that can occur with very long repetitive strings
+            if "StackOverflow" in str(e):
+                # Process in smaller chunks to avoid excessive stack usage
+                CHUNK_SIZE = 10000  # Much smaller than the problematic size
+                chunks = [text[i:i+CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
+                result = []
+                for chunk in chunks:
+                    result.extend(self._core_bpe.encode(chunk, allowed_special))
+                return result
+            raise  # Re-raise any other runtime errors
 
     def encode_to_numpy(
         self,
@@ -155,8 +166,22 @@ class Encoding:
 
         import numpy as np
 
-        buffer = self._core_bpe.encode_to_tiktoken_buffer(text, self.special_tokens_set)
-        return np.frombuffer(buffer, dtype=np.uint32)
+        try:
+            buffer = self._core_bpe.encode_to_tiktoken_buffer(text, self.special_tokens_set)
+            return np.frombuffer(buffer, dtype=np.uint32)
+        except RuntimeError as e:
+            # Handle stack overflow errors that can occur with very long repetitive strings
+            if "StackOverflow" in str(e):
+                # Process in smaller chunks and convert the result to numpy array
+                CHUNK_SIZE = 10000  # Much smaller than the problematic size
+                chunks = [text[i:i+CHUNK_SIZE] for i in range(0, len(text), CHUNK_SIZE)]
+                result = []
+                for chunk in chunks:
+                    result.extend(self.encode(chunk, 
+                                              allowed_special=allowed_special, 
+                                              disallowed_special=disallowed_special))
+                return np.array(result, dtype=np.uint32)
+            raise  # Re-raise any other runtime errors
 
     def encode_ordinary_batch(self, text: list[str], *, num_threads: int = 8) -> list[list[int]]:
         """Encodes a list of strings into tokens, in parallel, ignoring special tokens.
@@ -398,7 +423,18 @@ class Encoding:
         return ret
 
     def _encode_bytes(self, text: bytes) -> list[int]:
-        return self._core_bpe._encode_bytes(text)
+        try:
+            return self._core_bpe._encode_bytes(text)
+        except RuntimeError as e:
+            # Handle stack overflow errors that can occur with very long repetitive strings
+            if "StackOverflow" in str(e):
+                # Process in smaller chunks to avoid excessive stack usage
+                CHUNK_SIZE = 10000  # Much smaller than the problematic size
+                result = []
+                for i in range(0, len(text), CHUNK_SIZE):
+                    result.extend(self._core_bpe._encode_bytes(text[i:i+CHUNK_SIZE]))
+                return result
+            raise  # Re-raise any other runtime errors
 
     def __getstate__(self) -> object:
         import tiktoken.registry
